@@ -50,6 +50,8 @@ Change everything you need to change to call Block-1.5 with the input files ```F
 It should return the 1RDM and 2RDM as ```spatial_onepdm.0.0.txt``` and ```spatial_twopdm.0.0.txt```, to be copied in your working directory.
 You could use another solver, as long as it provides the diagonal of the 1RDM (i.e., site occupation) and 2RDM (i.e., double occupation).
 
+Note that this dmrg_script.sh is only called when you specify more than one impurity site ! Otherwise, you don't even need to install Block.1-5.
+
 ```
 $ cd ../work_dir/
 $ vi script.py
