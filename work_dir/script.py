@@ -1,6 +1,6 @@
 #!/usr/bin/python 
 import sys
-code_directory = "/b/home/quant/bsenjean/P-SOET_final/code/"
+code_directory = "/b/home/quant/bsenjean/P-SOET/code/"
 sys.path.append(code_directory)
 import run_PSOET
 
