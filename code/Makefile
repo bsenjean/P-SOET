@@ -5,7 +5,7 @@
 # Compilers
 
 FC = ifort
-FFLAGS = #-fp-stack-check -g -traceback -check all
+FFLAGS = -fp-stack-check -g -O2 -traceback -debug #-check all
 LIBS = -L/b/home/quant/bsenjean/LAPACK/lapack-3.7.1 -llapacke -lrefblas
 
 MAIN1 = beta_and_derivatives.o
