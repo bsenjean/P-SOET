@@ -1,4 +1,4 @@
-#!/usr/bin/python 
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Projected Site Occupation Embedding Theory
@@ -52,7 +52,7 @@ def solve_Hamiltonian(L,N,H):
       occ = [0]*L
       for i in range(L):
        for j in range(L):
-        for k in range(N/2):
+        for k in range(int(N/2)):
          onepdm[i,j]+=C[i,k]*C[j,k]
        occ[i] = 2*onepdm[i,i] # Because the onepdm is for a given spin.
       return onepdm,occ
@@ -64,7 +64,6 @@ def write_mat(L,N,t,U,n_imp,mat):
          for val in row:
            f.write('%20.15f' % val)
          f.write("\n")
-       f.close()
 
 def generate_potential(L,U,t,occ,beta,dbeta_dU,n_imp,approx):
       """
@@ -133,7 +132,6 @@ def write_FCIDUMP(U,h_emb,n_imp):
             f.write('%15.10f %3d %3d %3d %3d\n' % (h_emb[i,j],i+1,j+1,0,0))
       for i in range(2*n_imp):
          f.write('%15.10f %3d %3d %3d %3d\n' % (h_emb[i,i],i+1,i+1,0,0))
-      f.close()
 
 def write_dmrg_conf(n_imp,m,opt):
    with open("dmrg_"+str(opt)+".conf","w") as f:
@@ -147,17 +145,14 @@ def write_dmrg_conf(n_imp,m,opt):
       f.write("maxM {}\n".format(m))
       f.write("maxiter 200\n")
       f.write(str(opt))
-      f.close()
   
 def read_dmrg_onepdm_twopdm(n_imp):
     with open("spatial_onepdm.0.0.txt") as f:
      f.readline()
      onepdm_tmp = [[token for token in line.split()] for line in f.readlines()]
-    f.close()
     with open("spatial_twopdm.0.0.txt") as f:
      f.readline()
      twopdm_tmp = [[token for token in line.split()] for line in f.readlines()]
-    f.close()
     onepdm={}
     twopdm={}
     for row in range(len(onepdm_tmp)):
@@ -290,6 +285,8 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
             we set it to 0 and the calculation is done in only one iteration.
             This calculation gives us the 1RDM from which we will apply the Schmidt Decomposition 
             to obtain a new Schmidt basis (new bath states) and a Projector.\n""")
+   h_SOFT = generate_Hamiltonian(L,N,t,[0]*L)
+   onepdm_SOFT, occ = solve_Hamiltonian(L,N,h_SOFT)
    try: 
       h_SOFT = generate_Hamiltonian(L,N,t,[0]*L)
       onepdm_SOFT, occ = solve_Hamiltonian(L,N,h_SOFT)
@@ -308,7 +305,6 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
      sys.exit(0)
    with open("projector.dat") as f:
      P = np.asarray([[float(token) for token in line.split()] for line in f.readlines()])
-   f.close()
 
 
    # Compute beta and dbeta_dU for the approximate functionals.
@@ -318,7 +314,6 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
          line = f.read()
          beta = float(line.split()[0])
          dbeta_dU = float(line.split()[1])
-         f.close()
    except:
       print("Failed to compute beta. Look at beta_and_derivatives.f90 and its compilation and execution.")
       sys.exit(0)
@@ -348,4 +343,3 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
             f.write('%12.8f ' % occ[i])
          f.write('%12.8f %15.8f %15.8f %15.8f %15.8f\n' % (delta_occ,persite,persite_nexact,dblocc,dblocc_nexact))
          iteration += 1
-   f.close()

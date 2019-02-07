@@ -4,9 +4,11 @@
 
 # Compilers
 
-FC = ifort
-FFLAGS = #-fp-stack-check -g -traceback -check all
-LIBS = -L/b/home/quant/bsenjean/LAPACK/lapack-3.7.1 -llapacke -lrefblas
+FC = gfortran
+#FFLAGS = -fp-stack-check -g -O2 -traceback -check all
+FFLAGS = -fstack-check -g -O2
+#LIBS = -L/b/home/quant/bsenjean/LAPACK/lapack-3.7.1 -llapacke -lrefblas
+LIBS = -L/usr/local/lib -llapack -lrefblas
 
 MAIN1 = beta_and_derivatives.o
 OBJS1 = secant.o quadpack_double.o
