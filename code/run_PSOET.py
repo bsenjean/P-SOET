@@ -324,6 +324,8 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
    print("#"*60 + "\n")
    iteration = 0
    delta_occ = 1
+   if N/L == 1: # This option is necessary as otherwise, the occupation obtained from the KS calculation, which is subject to numerical error, oscillates around 1 and leads to convergence problem. This is known in the literature, and it is due to the Mott--Hubbard transition at half-filling (--> discontinuity in the potential).
+      occ = [1.0*N/L]*L
    if single_shot is True:
       MAXITER = 1
    with open("L{}_N{}_U{}_t{}_nimp{}_{}.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx),"w") as f:

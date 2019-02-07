@@ -67,6 +67,12 @@ def correlation_2LBALDA(U,t,occ):
    Second parametrization for the impurity Hubbard dimer,
    see Senjean et al. Theoretical Chemistry Accounts (2018) 137:169
    """
+   occ_tmp = 0
+   if U == 0:
+     U =0.000001
+   if occ == 1:
+     occ = 0.99999
+     occ_tmp = 1
    sign = lambda x: x and (1, -1)[x<0]
    rho = abs(occ - 1)
    # For the impurity case, u = U/4t and not U/2t as in the fully-interacting dimer.
@@ -131,25 +137,28 @@ def correlation_2LBALDA(U,t,occ):
    dEcimp_dt = Ecimp/t - U*dEcimp_dU/t   
 
    # Derivative with respect to n
-   drho_dn = sign(occ - 1)
-   dTs_dn = - 2*t*(1 - occ)/np.sqrt(occ*(2 - occ))
-       # Note that P = j*k and Q = l in Eq. 155 of Ref. Senjean et al. Theoretical Chemistry Accounts (2018) 137:169
-   dP_drho = (3*(1 - rho)*(1 + rho)**2 - (1 + rho)**3)*u**2*((3*rho/2 - 1 + rho*(1 + rho)**3*u*a_2)*a_12 \
-             - rho*(1 + (1 + rho)**3*u*a_1)*a_22) \
-             + (1 - rho)*(1 + rho)**3*u**2*((3/2.0 + 3*u*(1 + rho)**2*rho*a_2 \
-             + u*(1 + rho)**3*(a_2 + rho*da2_drho))*a_12 \
-             + (3*rho/2 - 1 + rho*(1 + rho)**3*u*a_2)*da12_drho - (rho*da22_drho + a_22)*(1 + (1 + rho)**3*u*a_1) \
-             - rho*a_22*(3*(1 + rho)**2*u*a_1 + (1 + rho)**3*u*da1_drho))
-   dQ_drho = 2*dg0_drho*(1 + (1 + rho)**3*u*a_2)**2 + 4*g0*(1 + (1 + rho)**3*u*a_2)*u*(3.0*(1 + rho)**2*a_2 + (1 + rho)**3*da2_drho)
-   dq_drho = (dP_drho*l - j*k*dQ_drho)/l**2
-   ddh_ddrhog0 = (- dg0_drho*(g0**2 + rho**2) + 4*g0*(g0*dg0_drho + rho))*(2*rho**2 + g0**2*(1 - Y0))/(g0**2 + rho**2)**3 \
-                 - g0*(4*rho + 2*g0*dg0_drho*(1 - Y0) + g0**2*(g0*dg0_drho + rho)/Y0)/(g0**2 + rho**2)**2 \
-                 - (g0*dg0_drho + rho)*(2*g0*(1 - Y0) + g0**3/Y0)/(g0**2 + rho**2)**2 \
-                 + (2*dg0_drho*(1 - Y0) + 2*g0*rho/Y0 + 5*g0**2*dg0_drho/Y0 + g0**3*(g0*dg0_drho + rho)/Y0**3)/(2*(g0**2 + rho**2))
-   dg1_drho = dg0_drho + (u*dh_dg0 - 1)*dq_drho + u*ddh_ddrhog0*q
-   dh1_drho = (1/(2*(g1**2 + rho**2)))*(4*rho + 2*g1*dg1_drho*(1 - Y1) + g1**2*(g1*dg1_drho + rho)/Y1) \
-             - (g1*dg1_drho + rho)*(2*rho**2 + g1**2*(1 - Y1))/(g1**2 + rho**2)**2
-   df_drho = -2*t*dg1_drho + 0.5*U*dh1_drho
-   dEHxcimp_dn = drho_dn*df_drho - dTs_dn + U/2.0
-   dEcimp_dn = drho_dn*df_drho - dTs_dn + U/2.0 - U*occ*0.5
+   if occ_tmp == 1:
+     dEcimp_dn = 0
+   else:
+     drho_dn = sign(occ - 1)
+     dTs_dn = - 2*t*(1 - occ)/np.sqrt(occ*(2 - occ))
+         # Note that P = j*k and Q = l in Eq. 155 of Ref. Senjean et al. Theoretical Chemistry Accounts (2018) 137:169
+     dP_drho = (3*(1 - rho)*(1 + rho)**2 - (1 + rho)**3)*u**2*((3*rho/2 - 1 + rho*(1 + rho)**3*u*a_2)*a_12 \
+               - rho*(1 + (1 + rho)**3*u*a_1)*a_22) \
+               + (1 - rho)*(1 + rho)**3*u**2*((3/2.0 + 3*u*(1 + rho)**2*rho*a_2 \
+               + u*(1 + rho)**3*(a_2 + rho*da2_drho))*a_12 \
+               + (3*rho/2 - 1 + rho*(1 + rho)**3*u*a_2)*da12_drho - (rho*da22_drho + a_22)*(1 + (1 + rho)**3*u*a_1) \
+               - rho*a_22*(3*(1 + rho)**2*u*a_1 + (1 + rho)**3*u*da1_drho))
+     dQ_drho = 2*dg0_drho*(1 + (1 + rho)**3*u*a_2)**2 + 4*g0*(1 + (1 + rho)**3*u*a_2)*u*(3.0*(1 + rho)**2*a_2 + (1 + rho)**3*da2_drho)
+     dq_drho = (dP_drho*l - j*k*dQ_drho)/l**2
+     ddh_ddrhog0 = (- dg0_drho*(g0**2 + rho**2) + 4*g0*(g0*dg0_drho + rho))*(2*rho**2 + g0**2*(1 - Y0))/(g0**2 + rho**2)**3 \
+                   - g0*(4*rho + 2*g0*dg0_drho*(1 - Y0) + g0**2*(g0*dg0_drho + rho)/Y0)/(g0**2 + rho**2)**2 \
+                   - (g0*dg0_drho + rho)*(2*g0*(1 - Y0) + g0**3/Y0)/(g0**2 + rho**2)**2 \
+                   + (2*dg0_drho*(1 - Y0) + 2*g0*rho/Y0 + 5*g0**2*dg0_drho/Y0 + g0**3*(g0*dg0_drho + rho)/Y0**3)/(2*(g0**2 + rho**2))
+     dg1_drho = dg0_drho + (u*dh_dg0 - 1)*dq_drho + u*ddh_ddrhog0*q
+     dh1_drho = (1/(2*(g1**2 + rho**2)))*(4*rho + 2*g1*dg1_drho*(1 - Y1) + g1**2*(g1*dg1_drho + rho)/Y1) \
+               - (g1*dg1_drho + rho)*(2*rho**2 + g1**2*(1 - Y1))/(g1**2 + rho**2)**2
+     df_drho = -2*t*dg1_drho + 0.5*U*dh1_drho
+     dEHxcimp_dn = drho_dn*df_drho - dTs_dn + U/2.0
+     dEcimp_dn = drho_dn*df_drho - dTs_dn + U/2.0 - U*occ*0.5
    return Ecimp, dEcimp_dU, dEcimp_dt, dEcimp_dn
