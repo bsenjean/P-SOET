@@ -285,8 +285,6 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
             we set it to 0 and the calculation is done in only one iteration.
             This calculation gives us the 1RDM from which we will apply the Schmidt Decomposition 
             to obtain a new Schmidt basis (new bath states) and a Projector.\n""")
-   h_SOFT = generate_Hamiltonian(L,N,t,[0]*L)
-   onepdm_SOFT, occ = solve_Hamiltonian(L,N,h_SOFT)
    try: 
       h_SOFT = generate_Hamiltonian(L,N,t,[0]*L)
       onepdm_SOFT, occ = solve_Hamiltonian(L,N,h_SOFT)
