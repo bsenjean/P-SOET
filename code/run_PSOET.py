@@ -23,6 +23,7 @@ import subprocess
 import approximate_functionals as app_func
 import numpy as np
 from scipy.linalg import eigh
+from scipy import optimize
 
 
 def generate_Hamiltonian(L,N,t,v):
@@ -166,7 +167,7 @@ def read_dmrg_onepdm_twopdm(n_imp):
        dimp[i] = twopdm[i,i,i,i]
     return occ,dimp
 
-def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,code_directory):
+def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,code_directory):
    occ_exact = [N/(1.0*L)]*L
    old_occ = [0]*L
    delta_occ = 0
@@ -196,9 +197,13 @@ def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,code_directo
       print("      Delta v = v_1 - v_0 = h_emb[1,1] - h_emb[0,0]   : {}\n".format(deltav))
       print("  The impurity problem is related to the fully-interacting one by Eimp(U,deltav) = E(U/2,deltav - U/2).\n")
 
-      occ_imp, dimp = solve_dimer(U/2.0,-h_emb[0,1],deltav - U/2.0)
       try:
-         occ_imp, dimp = solve_dimer(U/2.0,-h_emb[0,1],deltav - U/2.0)
+         if chem_pot:
+           mu = optimize.fminbound(lambda x: abs(solve_dimer(U/2.0,-h_emb[0,1],deltav - U/2.0 + x)[0][0] - N/(1.0*L)), -1000,1000)
+           occ_imp, dimp = solve_dimer(U/2.0,-h_emb[0,1], deltav - U/2.0 + mu)
+           print("Optimization of the chemical potential : mu = {}\n".format(mu))
+         else:
+           occ_imp, dimp = solve_dimer(U/2.0,-h_emb[0,1],deltav - U/2.0)
       except:
          print("Failed to solve the embedded Hubbard dimer.")
          sys.exit(0)
@@ -248,6 +253,7 @@ def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,code_directo
 
 def run_psoet(L,N,U,t,n_imp,approx,code_directory,
               single_shot = False,
+              chem_pot = False,
               m = 1000,
               MAXITER = 50,
               threshold = 0.0001):
@@ -273,6 +279,8 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
      raise ValueError("The number of electrons must be lower than twice the number of sites.")
    if n_imp > L/2.0:
      raise ValueError("The number of impurities must be lower than half the number of sites.\nIf n_imp = n_sites/2, the embedding is exact.")
+   if chem_pot and n_imp > 1:
+     raise ValueError("The optimization with a global chemical potential is not set for multiple impurities yet.")
 
 
    print("Starting PSOET for {} sites, {} eletrons, U/t = {} and {} impurity site(s)\n".format(L,N,U/t,n_imp))
@@ -320,7 +328,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
    print("#"*60)
    print("                     START ITERATIONS")
    print("#"*60 + "\n")
-   iteration = 0
+   iteration = 1
    delta_occ = 1
    if N/L == 1: # This option is necessary as otherwise, the occupation obtained from the KS calculation, which is subject to numerical error, oscillates around 1 and leads to convergence problem. This is known in the literature, and it is due to the Mott--Hubbard transition at half-filling (--> discontinuity in the potential).
       occ = [1.0*N/L]*L
@@ -337,7 +345,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
          print("#"*30)
          print("        ITERATION " + str(iteration))    
          print("#"*30+"\n")
-         occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,code_directory)
+         occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,code_directory)
          f.write('%8d ' % (iteration))
          for i in range(n_imp):
             f.write('%12.8f ' % occ[i])

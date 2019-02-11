@@ -79,3 +79,19 @@ You can also specify optionally:
 - The number of renormalized states to keep in DMRG
 - The number of maximum iterations
 - The threshold for convergence
+- The use of a global chemical potential (for now, only for a single impurity problem)
+
+# How to cite
+
+We would be grateful if you could cite the following articles if you found this program useful:
+
+- B. Senjean, M. Tsuchiizu, V. Robert, E. Fromager. Local density approximation in site occupation
+embedding theory. Mol. Phys., 115, 48 (2017).
+
+- B. Senjean, N. Nakatani, M. Tsuchiizu, E. Fromager. Site-Occupation Embedding Theory using
+Bethe Ansatz Local Density Approximations. Phys. Rev. B, 97, 235105 (2018).
+
+- B. Senjean, N. Nakatani, M. Tsuchiizu, E. Fromager. Multiple impurities and combined local
+density approximations in Site-Occupation Embedding Theory. Theor. Chem. Acc. 137: 169 (2018)
+
+And the last one that employs this projected implementation of SOET:
