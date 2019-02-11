@@ -334,7 +334,11 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
       occ = [1.0*N/L]*L
    if single_shot is True:
       MAXITER = 1
-   with open("L{}_N{}_U{}_t{}_nimp{}_{}.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx),"w") as f:
+   if chem_pot is True:
+      name = "L{}_N{}_U{}_t{}_nimp{}_{}_chempot.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx)
+   else:
+      name = "L{}_N{}_U{}_t{}_nimp{}_{}.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx)
+   with open(name,"w") as f:
       f.write("--------------------------------- SUMMARY OF THE RESULTS ---------------------------------\n")
       f.write("Exact uniform density : {}\n".format(1.0*N/L))
       f.write('%8s ' % ("Iter"))
