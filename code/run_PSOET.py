@@ -167,7 +167,7 @@ def read_dmrg_onepdm_twopdm(n_imp):
        dimp[i] = twopdm[i,i,i,i]
     return occ,dimp
 
-def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,code_directory):
+def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,code_directory):
    occ_exact = [N/(1.0*L)]*L
    old_occ = [0]*L
    delta_occ = 0
@@ -198,7 +198,7 @@ def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,cod
       print("  The impurity problem is related to the fully-interacting one by Eimp(U,deltav) = E(U/2,deltav - U/2).\n")
 
       try:
-         if chem_pot:
+         if opt_pot:
            mu = optimize.fminbound(lambda x: abs(solve_dimer(U/2.0,-h_emb[0,1],deltav - U/2.0 + x)[0][0] - N/(1.0*L)), -1000,1000)
            occ_imp, dimp = solve_dimer(U/2.0,-h_emb[0,1], deltav - U/2.0 + mu)
            print("Optimization of the chemical potential : mu = {}\n".format(mu))
@@ -241,19 +241,23 @@ def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,cod
       print("     site {}: {}".format(i,occ[i]))
    print("")
    print("   Per-site energy   : {}".format(persite))
-   print("   Double occupation: {}\n".format(dblocc))
+   print("   Double occupation : {}\n".format(dblocc))
    print("   And using the exact uniform density:")
-   print("   Per-site energy  : {}".format(persite_nexact))
-   print("   Double occupation: {}\n".format(dblocc_nexact))
+   print("   Per-site energy   : {}".format(persite_nexact))
+   print("   Double occupation : {}\n".format(dblocc_nexact))
    print("   Delta occ = {}\n".format(delta_occ))
-   return occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact 
+   if opt_pot is True:
+     print("   Chemical pot      : {}".format(mu))
+     return occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact, mu, deltav
+   else:
+     return occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact 
 
 
 
 
 def run_psoet(L,N,U,t,n_imp,approx,code_directory,
               single_shot = False,
-              chem_pot = False,
+              opt_pot = False,
               m = 1000,
               MAXITER = 50,
               threshold = 0.0001):
@@ -279,7 +283,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
      raise ValueError("The number of electrons must be lower than twice the number of sites.")
    if n_imp > L/2.0:
      raise ValueError("The number of impurities must be lower than half the number of sites.\nIf n_imp = n_sites/2, the embedding is exact.")
-   if chem_pot and n_imp > 1:
+   if opt_pot and n_imp > 1:
      raise ValueError("The optimization with a global chemical potential is not set for multiple impurities yet.")
 
 
@@ -334,7 +338,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
       occ = [1.0*N/L]*L
    if single_shot is True:
       MAXITER = 1
-   if chem_pot is True:
+   if opt_pot is True:
       name = "L{}_N{}_U{}_t{}_nimp{}_{}_chempot.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx)
    else:
       name = "L{}_N{}_U{}_t{}_nimp{}_{}.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx)
@@ -344,14 +348,23 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
       f.write('%8s ' % ("Iter"))
       for i in range(n_imp):
          f.write('%12s ' % ("occ_" + str(i)))
-      f.write('%12s %15s %15s %15s %15s\n' % ("Delta_occ","Per-site","P-s_nexact","Dbl-occ","D-o_nexact"))
+      if opt_pot is True:
+        f.write('%12s %15s %15s %15s %15s %15s %15s\n' % ("Delta_occ","Per-site","P-s_nexact","Dbl-occ","D-o_nexact","opt_pot","deltav"))
+      else:
+        f.write('%12s %15s %15s %15s %15s\n' % ("Delta_occ","Per-site","P-s_nexact","Dbl-occ","D-o_nexact"))
       while delta_occ > threshold and iteration <= MAXITER:
          print("#"*30)
          print("        ITERATION " + str(iteration))    
          print("#"*30+"\n")
-         occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,code_directory)
+         if opt_pot is True:
+           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact, mu, deltav = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,code_directory)
+         else:
+           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,code_directory)
          f.write('%8d ' % (iteration))
          for i in range(n_imp):
             f.write('%12.8f ' % occ[i])
-         f.write('%12.8f %15.8f %15.8f %15.8f %15.8f\n' % (delta_occ,persite,persite_nexact,dblocc,dblocc_nexact))
+         if opt_pot is True:
+           f.write('%12.8f %15.8f %15.8f %15.8f %15.8f %15.8f %15.8f\n' % (delta_occ,persite,persite_nexact,dblocc,dblocc_nexact,mu,deltav))
+         else:
+           f.write('%12.8f %15.8f %15.8f %15.8f %15.8f\n' % (delta_occ,persite,persite_nexact,dblocc,dblocc_nexact))
          iteration += 1
