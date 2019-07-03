@@ -100,5 +100,3 @@ Bethe Ansatz Local Density Approximations. Phys. Rev. B, 97, 235105 (2018).
 
 - B. Senjean, N. Nakatani, M. Tsuchiizu, E. Fromager. Multiple impurities and combined local
 density approximations in Site-Occupation Embedding Theory. Theor. Chem. Acc. 137: 169 (2018)
-
-And the last one that employs this projected implementation of SOET:
