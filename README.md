@@ -1,6 +1,9 @@
 # P-SOET
 
-This program runs the Projected Site-Occupation Embedding Theory on the 1D Hubbard model.
+This program runs the Projected Site-Occupation Embedding Theory on the 1D Hubbard model:
+
+https://arxiv.org/abs/1902.05747
+
 It is a projected version (using Schmidt decomposition) of Site-Occupation Embedding Theory, which articles can be find at:
 
 https://arxiv.org/abs/1409.2326
@@ -82,6 +85,10 @@ You can also specify optionally:
 - The use of a global chemical potential (for now, only for a single impurity problem)
 
 # How to cite
+
+Cite the following paper:
+
+- B. Senjean. Projected site-occupation embedding theory. arXiv:1902.05747 
 
 We would be grateful if you could cite the following articles if you found this program useful:
 
