@@ -33,12 +33,12 @@ import numpy as np
 ##################
 
 def correlation_BALDA(U,t,occ,beta,dbeta_dU):
-   if occ <= 1:
+   if occ <= 1.0:
        ec = - 2*t*beta*np.sin(np.pi*occ/beta)/np.pi + 4.0*t*np.sin(np.pi*occ/2.0)/np.pi - U*0.25*occ*occ
        dec_dU = dbeta_dU*(-2*t*np.sin(np.pi*occ/beta)/np.pi + 2*t*occ*np.cos(np.pi*occ/beta)/beta) - occ*occ*0.25
        dec_dn = - 2*t*np.cos(np.pi*occ/beta) + 2*t*np.cos(np.pi*occ/2.0) - U*0.5*occ
    else:
-       ec = - 2*t*beta*np.sin(np.pi*(2-occ)/beta)/np.pi + U*(occ-1) - 4.0*t*np.sin(np.pi*(2-occ)/2.0)/np.pi - U*occ*occ*0.25
+       ec = - 2*t*beta*np.sin(np.pi*(2-occ)/beta)/np.pi + U*(occ-1) + 4.0*t*np.sin(np.pi*(2-occ)/2.0)/np.pi - U*occ*occ*0.25
        dec_dU = dbeta_dU*(-2*t*np.sin(np.pi*(2-occ)/beta)/np.pi + 2*t*(2-occ)*np.cos(np.pi*(2-occ)/beta)/beta) + occ - 1 - occ*occ*0.25
        dec_dn = 2*t*np.cos(np.pi*(2.0-occ)/beta) - 2*t*np.cos(np.pi*(2.0-occ)/2.0) + U - U*0.5*occ
    dec_dt = ec/t - U*dec_dU/t
