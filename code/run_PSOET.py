@@ -287,6 +287,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
               semi_opt = False,
               single_shot = False,
               chem_pot = False,
+              description = "",
               m = 1000,
               MAXITER = 50,
               threshold = 0.0001):
@@ -323,13 +324,13 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
    if semi_opt:
      semiopt_string = "ON"
    if chem_pot:
-     optpot_procedure = "ON"
+     chempot_procedure = "ON"
 
    print("Starting PSOET for {} sites, {} eletrons, U/t = {} and {} impurity site(s)\n".format(L,N,U/t,n_imp,approx))
 
    print("Options:")
    print(" Single shot                     : {}".format(ss_procedure))
-   print(" Optimized potential             : {}".format(chempot_procedure))
+   print(" Optimizing chemical potential   : {}".format(chempot_procedure))
    print(" Semi self-consistent procedure  : {}".format(semiopt_string))
    print("    (this means that only dEcimp_dn is optimized, while the other potentials are frozen with density N/L).\n")
 
@@ -385,7 +386,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
    if single_shot:
       MAXITER = 1
       description += "_singleshot"
-   if opt_pot:
+   if chem_pot:
       description += "_chempot"
    if semi_opt:
       description += "_semiopt"
@@ -400,7 +401,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
       f.write(" Number of impurities           : {}\n".format(n_imp))
       f.write(" Approximate functional         : {}\n".format(approx))
       f.write(" Single shot                    : {}\n".format(ss_procedure))
-      f.write(" Optimizing chemical potential  : {}\n".format(optpot_procedure))
+      f.write(" Optimizing chemical potential  : {}\n".format(chempot_procedure))
       f.write(" Semi self-consistent procedure : {}\n".format(semiopt_string))
       f.write(" Exact uniform density          : {}\n".format(1.0*N/L))
       f.write("--------------------------------- SUMMARY OF THE RESULTS ---------------------------------\n")
