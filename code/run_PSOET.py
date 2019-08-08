@@ -37,9 +37,9 @@ def generate_Hamiltonian(L,N,t,v):
        H[i,i+1] = H[i+1,i] = +t
        H[i,i] = v[i]
        H[L-1,0] = H[0,L-1] = +t
-      if ((N/2) % 2 == 1): #periodic condition
+      if ((N//2) % 2 == 1): #periodic condition
        H[L-1,0] = H[0,L-1] = +t
-      elif ((N/2) % 2 == 0): #antiperiodic condition
+      elif ((N//2) % 2 == 0): #antiperiodic condition
        H[L-1,0] = H[0,L-1] = -t
       H[L-1,L-1] = v[L-1]
       return H
@@ -53,7 +53,7 @@ def solve_Hamiltonian(L,N,H):
       occ = [0]*L
       for i in range(L):
        for j in range(L):
-        for k in range(int(N/2)):
+        for k in range(N//2):
          onepdm[i,j]+=C[i,k]*C[j,k]
        occ[i] = 2*onepdm[i,i] # Because the onepdm is for a given spin.
       return onepdm,occ
@@ -65,6 +65,7 @@ def write_mat(L,N,t,U,n_imp,mat):
          for val in row:
            f.write('%20.15f' % val)
          f.write("\n")
+       f.close()
 
 def generate_potential(L,U,t,occ,beta,dbeta_dU,n_imp,approx):
       """
@@ -83,6 +84,26 @@ def generate_potential(L,U,t,occ,beta,dbeta_dU,n_imp,approx):
           dEHxcimp_dn[i] = app_func.correlation_SIAMBALDA(U,t,occ[i])[3] + U*occ[i]*0.5
       for i in range(L):
         deHxc_dn[i] = app_func.correlation_BALDA(U,t,occ[i],beta,dbeta_dU)[3] + U*occ[i]*0.5
+        dEHxcbath_dn[i] = deHxc_dn[i] - dEHxcimp_dn[i]
+      return dEHxcbath_dn
+
+def generate_potential_allfrozen_butEcimp(L,N,U,t,occ,beta,dbeta_dU,n_imp,approx):
+      """
+      Function that generates the embedding potential as well as
+      the derivative of the Hxc per-site energy with respect to U
+      """
+      deHxc_dn = [0]*L
+      dEHxcimp_dn = [0]*L
+      dEHxcbath_dn = [0]*L
+      for i in range(n_imp):
+        if approx == "iBALDA":
+          dEHxcimp_dn[i] = app_func.correlation_iBALDA(U,t,occ[i],beta,dbeta_dU)[3] + U*(N/(1.0*L))*0.5
+        elif approx == "2LBALDA":
+          dEHxcimp_dn[i] = app_func.correlation_2LBALDA(U,t,occ[i])[3] + U*(N/(1.0*L))*0.5
+        elif approx == "SIAMBALDA":
+          dEHxcimp_dn[i] = app_func.correlation_SIAMBALDA(U,t,occ[i])[3] + U*(N/(1.0*L))*0.5
+      for i in range(L):
+        deHxc_dn[i] = app_func.correlation_BALDA(U,t,(N/(1.0*L)),beta,dbeta_dU)[3] + U*(N/(1.0*L))*0.5
         dEHxcbath_dn[i] = deHxc_dn[i] - dEHxcimp_dn[i]
       return dEHxcbath_dn
 
@@ -133,6 +154,7 @@ def write_FCIDUMP(U,h_emb,n_imp):
             f.write('%15.10f %3d %3d %3d %3d\n' % (h_emb[i,j],i+1,j+1,0,0))
       for i in range(2*n_imp):
          f.write('%15.10f %3d %3d %3d %3d\n' % (h_emb[i,i],i+1,i+1,0,0))
+      f.close()
 
 def write_dmrg_conf(n_imp,m,opt):
    with open("dmrg_"+str(opt)+".conf","w") as f:
@@ -146,14 +168,17 @@ def write_dmrg_conf(n_imp,m,opt):
       f.write("maxM {}\n".format(m))
       f.write("maxiter 200\n")
       f.write(str(opt))
+      f.close()
   
 def read_dmrg_onepdm_twopdm(n_imp):
     with open("spatial_onepdm.0.0.txt") as f:
      f.readline()
      onepdm_tmp = [[token for token in line.split()] for line in f.readlines()]
+    f.close()
     with open("spatial_twopdm.0.0.txt") as f:
      f.readline()
      twopdm_tmp = [[token for token in line.split()] for line in f.readlines()]
+    f.close()
     onepdm={}
     twopdm={}
     for row in range(len(onepdm_tmp)):
@@ -167,7 +192,7 @@ def read_dmrg_onepdm_twopdm(n_imp):
        dimp[i] = twopdm[i,i,i,i]
     return occ,dimp
 
-def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,code_directory):
+def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,semi_opt,code_directory):
    occ_exact = [N/(1.0*L)]*L
    old_occ = [0]*L
    delta_occ = 0
@@ -177,7 +202,10 @@ def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,code
             This is the SOET one without interaction 
             (or, equivalently, the noninteracting one with the embedding potential).\n
             You selected the following approximation : {}, with {} impurities\n""".format(approx,n_imp))
-   dEHxcbath_dn = generate_potential(L,U,t,occ,beta,dbeta_dU,n_imp,approx)
+   if semi_opt:
+      dEHxcbath_dn = generate_potential_allfrozen_butEcimp(L,N,U,t,occ,beta,dbeta_dU,n_imp,approx)
+   else:
+      dEHxcbath_dn = generate_potential(L,U,t,occ,beta,dbeta_dU,n_imp,approx)
    h_eff = np.asarray(generate_Hamiltonian(L,N,t,dEHxcbath_dn))
 
    print("   Step 2/5: Project the one-body effective Hamiltonian to create the one-body embedded Hamiltonian.\n")
@@ -256,6 +284,7 @@ def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,code
 
 
 def run_psoet(L,N,U,t,n_imp,approx,code_directory,
+              semi_opt = False,
               single_shot = False,
               opt_pot = False,
               m = 1000,
@@ -286,8 +315,23 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
    if opt_pot and n_imp > 1:
      raise ValueError("The optimization with a global chemical potential is not set for multiple impurities yet.")
 
+   ss_procedure = "OFF"
+   optpot_procedure = "OFF"
+   semiopt_string = "OFF"
+   if single_shot:
+     ss_procedure = "ON"
+   if semi_opt:
+     semiopt_string = "ON"
+   if opt_pot:
+     optpot_procedure = "ON"
 
-   print("Starting PSOET for {} sites, {} eletrons, U/t = {} and {} impurity site(s)\n".format(L,N,U/t,n_imp))
+   print("Starting PSOET for {} sites, {} eletrons, U/t = {} and {} impurity site(s)\n".format(L,N,U/t,n_imp,approx))
+
+   print("Options:")
+   print(" Single shot                     : {}".format(ss_procedure))
+   print(" Optimized potential             : {}".format(optpot_procedure))
+   print(" Semi self-consistent procedure  : {}".format(semiopt_string))
+   print("    (this means that only dEcimp_dn is optimized, while the other potentials are frozen with density N/L).\n")
 
    print("#"*60)
    print("            INITIAL STEPS BEFORE SELF-CONSISTENCE")
@@ -315,6 +359,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
      sys.exit(0)
    with open("projector.dat") as f:
      P = np.asarray([[float(token) for token in line.split()] for line in f.readlines()])
+   f.close()
 
 
    # Compute beta and dbeta_dU for the approximate functionals.
@@ -324,6 +369,7 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
          line = f.read()
          beta = float(line.split()[0])
          dbeta_dU = float(line.split()[1])
+         f.close()
    except:
       print("Failed to compute beta. Look at beta_and_derivatives.f90 and its compilation and execution.")
       sys.exit(0)
@@ -336,15 +382,28 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
    delta_occ = 1
    if N/L == 1: # This option is necessary as otherwise, the occupation obtained from the KS calculation, which is subject to numerical error, oscillates around 1 and leads to convergence problem. This is known in the literature, and it is due to the Mott--Hubbard transition at half-filling (--> discontinuity in the potential).
       occ = [1.0*N/L]*L
-   if single_shot is True:
+   if single_shot:
       MAXITER = 1
-   if opt_pot is True:
-      name = "L{}_N{}_U{}_t{}_nimp{}_{}_chempot.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx)
-   else:
-      name = "L{}_N{}_U{}_t{}_nimp{}_{}.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx)
+      description += "_singleshot"
+   if opt_pot:
+      description += "_chempot"
+   if semi_opt:
+      description += "_semiopt"
+   name = "L{}_N{}_U{}_t{}_nimp{}_{}{}.out".format(str(L),str(N),str(U),str(t),str(n_imp),approx,description)
    with open(name,"w") as f:
+      f.write("-------------------------------- P-SOET 1D Hubbard model ---------------------------------\n")
+      f.write(" sites, {} eletrons, U/t = {} and {} impurity site(s)\n".format(L,N,U/t,n_imp,approx))
+      f.write(" Number of sites                : {}\n".format(L))
+      f.write(" Number of electrons            : {}\n".format(N))
+      f.write(" e-e interaction U              : {}\n".format(U))
+      f.write(" hopping parameter t            : {}\n".format(t))
+      f.write(" Number of impurities           : {}\n".format(n_imp))
+      f.write(" Approximate functional         : {}\n".format(approx))
+      f.write(" Single shot                    : {}\n".format(ss_procedure))
+      f.write(" Optimized potential            : {}\n".format(optpot_procedure))
+      f.write(" Semi self-consistent procedure : {}\n".format(semiopt_string))
+      f.write(" Exact uniform density          : {}\n".format(1.0*N/L))
       f.write("--------------------------------- SUMMARY OF THE RESULTS ---------------------------------\n")
-      f.write("Exact uniform density : {}\n".format(1.0*N/L))
       f.write('%8s ' % ("Iter"))
       for i in range(n_imp):
          f.write('%12s ' % ("occ_" + str(i)))
@@ -357,9 +416,9 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
          print("        ITERATION " + str(iteration))    
          print("#"*30+"\n")
          if opt_pot is True:
-           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact, mu, deltav = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,code_directory)
+           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact, mu, deltav = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,semi_opt,code_directory)
          else:
-           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,code_directory)
+           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,opt_pot,semi_opt,code_directory)
          f.write('%8d ' % (iteration))
          for i in range(n_imp):
             f.write('%12.8f ' % occ[i])
@@ -368,3 +427,4 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
          else:
            f.write('%12.8f %15.8f %15.8f %15.8f %15.8f\n' % (delta_occ,persite,persite_nexact,dblocc,dblocc_nexact))
          iteration += 1
+   f.close()
