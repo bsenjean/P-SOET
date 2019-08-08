@@ -1,29 +1,27 @@
 #!/usr/bin/python 
 import sys
-code_directory = "/b/home/quant/bsenjean/P-SOET/code/"
+code_directory = "/Users/bsenjean/Documents/codes/P-SOET_onHPC/P-SOET_final/code/"
 sys.path.append(code_directory)
 import run_PSOET
 
-n_site = 400
-t      = 1.0
-# approx : "iBALDA, "2LBALDA", "SIAMBALDA"
-m = 1000
-threshold = 0.0001
-opt_pot = True
+n_site      = 400
+n_elec      = 398
+U           = 8.0
+t           = 1.0
+n_imp       = 1 # Solved analytically for n_imp = 1. DMRG impurity solver is called for n_imp > 1
+approx      = ["iBALDA", "2LBALDA", "SIAMBALDA"][0]
+m           = 1000 # default is 1000. Number of renormalized states in DMRG.
+semi_opt    = True # default is False. This means only dEcimp_dn(n_0) will vary, while deHxc_dn and dEHximp_dn are calculated with fixed n=N/L.
+chem_pot    = False # default is False. Optimized a chemical potential numerically to match the occupation between the impurity wavefunction and the KS one, like in DMET. Works for a single impurity only. 
+single_shot = False # default is False. True --> MAXITER = 1
+description = "" # default is "". Additional description added to the name of the output file. Note that semiopt, chempot and ss (single-shot) are already set by default if they are set to True.
+MAXITER     = 50 # default is 50
+threshold   = 0.0001 # default is 0.0001
 
-for approx in ["iBALDA","2LBALDA"]:
- for U in [4.0,8.0]:
-  for n_imp in [1]:
-   for n_elec in range(2*n_imp,402,2):
-
-#optional arguments:
-# m (--> number of renormalized states in DMRG calculation. Default : 1000)
-# single_shot (True --> MAXITER = 1. Default = False)
-# MAXITER (--> set the maximum number of iterations. Default : 50)
-# threshold (--> set the threshold for the convergence of the impurity occupation(s). Default : 0.0001)
-# opt_pot (True --> Optimization with the global chemical potential to recover the exact density. Implemented for a single impurity for now.)
-
-      run_PSOET.run_psoet(n_site,n_elec,U,t,n_imp,approx,code_directory,
+run_PSOET.run_psoet(n_site,n_elec,U,t,n_imp,approx,code_directory, # this first line are mandatory arguments.
                     m = m,
-                    opt_pot = opt_pot,
+                    semi_opt = semi_opt,
+                    chem_pot = chem_pot,
+                    single_shot = single_shot,
+                    MAXITER = MAXITER,
                     threshold = threshold)
