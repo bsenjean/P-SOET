@@ -25,7 +25,6 @@ import numpy as np
 from scipy.linalg import eigh
 from scipy import optimize
 
-
 def generate_Hamiltonian(L,N,t,v):
       """
       Function that generates the 
@@ -139,8 +138,8 @@ def persite_and_dblocc(occ,dimp,U,t,n_imp,beta,dbeta_dU,approx):
       persite = persite + (-4*t*np.sin(np.pi*occ[i]/2.0)/np.pi + t*dec_dt + U*dimp[i] + U*decbath_dU)/n_imp
     return persite, dblocc
 
-def write_FCIDUMP(U,h_emb,n_imp):
-   with open("FCIDUMP","w") as f:
+def write_FCIDUMP(U,h_emb,n_imp,work_directory):
+   with open(work_directory+"/FCIDUMP","w") as f:
       f.write("&FCI NORB= {}, NELEC= {}, MS2= 0,\n".format(2*n_imp,2*n_imp))
       f.write(" ORBSYM="+"1,"*(2*n_imp)+"\n")
       f.write("ISYM=1,\n")
@@ -156,8 +155,8 @@ def write_FCIDUMP(U,h_emb,n_imp):
          f.write('%15.10f %3d %3d %3d %3d\n' % (h_emb[i,i],i+1,i+1,0,0))
       f.close()
 
-def write_dmrg_conf(n_imp,m,opt):
-   with open("dmrg_"+str(opt)+".conf","w") as f:
+def write_dmrg_conf(n_imp,m,opt,work_directory):
+   with open(work_directory+"/dmrg_"+str(opt)+".conf","w") as f:
       f.write("sym c1\n")
       f.write("orbitals FCIDUMP\n")
       f.write("nelec {}\n".format(2*n_imp))
@@ -170,12 +169,12 @@ def write_dmrg_conf(n_imp,m,opt):
       f.write(str(opt))
       f.close()
   
-def read_dmrg_onepdm_twopdm(n_imp):
-    with open("spatial_onepdm.0.0.txt") as f:
+def read_dmrg_onepdm_twopdm(n_imp,work_directory):
+    with open(work_directory+"/spatial_onepdm.0.0.txt") as f:
      f.readline()
      onepdm_tmp = [[token for token in line.split()] for line in f.readlines()]
     f.close()
-    with open("spatial_twopdm.0.0.txt") as f:
+    with open(work_directory+"/spatial_twopdm.0.0.txt") as f:
      f.readline()
      twopdm_tmp = [[token for token in line.split()] for line in f.readlines()]
     f.close()
@@ -192,7 +191,7 @@ def read_dmrg_onepdm_twopdm(n_imp):
        dimp[i] = twopdm[i,i,i,i]
     return occ,dimp
 
-def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,semi_opt,code_directory):
+def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,semi_opt,code_directory,work_directory,dmrg_code):
    occ_exact = [N/(1.0*L)]*L
    old_occ = [0]*L
    delta_occ = 0
@@ -239,15 +238,20 @@ def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,sem
    else:
       print("  {} impurities are considered. The embedded problem has {} sites with {} interacting sites.".format(n_imp,2*n_imp,n_imp))
       print("  It is solved numerically by Density Matrix Renormalization Group (https://github.com/sanshar/Block).\n") 
-      write_FCIDUMP(U,h_emb,n_imp)
-      write_dmrg_conf(n_imp,m,"onepdm")
-      write_dmrg_conf(n_imp,m,"twopdm")
+      write_FCIDUMP(U,h_emb,n_imp,work_directory)
+      write_dmrg_conf(n_imp,m,"onepdm",work_directory)
+      write_dmrg_conf(n_imp,m,"twopdm",work_directory)
       try:
-         subprocess.check_call(code_directory+"dmrg_script.sh",shell=True)
+#         subprocess.check_call(code_directory+"dmrg_script.sh",shell=True)
+          subprocess.check_call("mpirun -np 1 {0}/block.spin_adapted {1}/dmrg_onepdm.conf > {1}/dmrg1.out 2> {1}/dmrg1.err ; wait".format(dmrg_code,work_directory),shell=True)
+          subprocess.check_call("mpirun -np 1 {0}/block.spin_adapted {1}/dmrg_twopdm.conf > {1}/dmrg2.out 2> {1}/dmrg2.err ; wait".format(dmrg_code,work_directory),shell=True)
+          subprocess.check_call("cp node0/spatial_onepdm.0.0.txt {}".format(work_directory),shell=True)
+          subprocess.check_call("cp node0/spatial_twopdm.0.0.txt {}".format(work_directory),shell=True)
       except:
-         print("Could not run the dmrg_script.sh, check if it is in code_directory.")
+#         print("Could not run the dmrg_script.sh, check if it is in code_directory.")
+         print("Could not run dmrg properly.")
          sys.exit(0)
-      occ_imp,dimp = read_dmrg_onepdm_twopdm(n_imp)
+      occ_imp,dimp = read_dmrg_onepdm_twopdm(n_imp,work_directory)
 
    print("""   Step 4/5: Compute the SOET per-site energy and double occupation.
             Use the values of the occupation and the double occupation of the impurity
@@ -283,7 +287,7 @@ def self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,sem
 
 
 
-def run_psoet(L,N,U,t,n_imp,approx,code_directory,
+def run_psoet(L,N,U,t,n_imp,approx,code_directory,work_directory,dmrg_code,
               semi_opt = False,
               single_shot = False,
               chem_pot = False,
@@ -417,9 +421,9 @@ def run_psoet(L,N,U,t,n_imp,approx,code_directory,
          print("        ITERATION " + str(iteration))    
          print("#"*30+"\n")
          if chem_pot is True:
-           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact, mu, deltav = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,semi_opt,code_directory)
+           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact, mu, deltav = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,semi_opt,code_directory,work_directory,dmrg_code)
          else:
-           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,semi_opt,code_directory)
+           occ, delta_occ, persite, dblocc, persite_nexact, dblocc_nexact = self_consistent_loop(L,N,U,t,m,occ,beta,dbeta_dU,n_imp,approx,P,chem_pot,semi_opt,code_directory,work_directory,dmrg_code)
          f.write('%8d ' % (iteration))
          for i in range(n_imp):
             f.write('%12.8f ' % occ[i])
