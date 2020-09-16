@@ -15,9 +15,9 @@
 ####
 source /home/configfiles/bashrc.default
 module purge
-module load batch/slurm
-module load compilers/intel16
-module load mpi/openmpi-1.10.i16
+module load slurm/slurm
+module load intel/intel16
+module load openmpi/openmpi-2.0.i17
 module load /usr/local/quant/modules/boost-1-55-0.i16
 ####
 #
