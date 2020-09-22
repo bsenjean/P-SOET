@@ -43,24 +43,20 @@ Change the Makefile according to your preferences. Change compiler, add FLAGS, a
 $ make
 ```
 
-Make sure the Block-1.5 code will run correctly:
-
-```
-$ vi dmrg_script.sh
-```
-
-Change everything you need to change to call Block-1.5 with the input files ```FCIDUMP```, ```dmrg_onepdm.conf``` and ```dmrg_twopdm.conf```.
-It should return the 1RDM and 2RDM as ```spatial_onepdm.0.0.txt``` and ```spatial_twopdm.0.0.txt```, to be copied in your working directory.
-You could use another solver, as long as it provides the diagonal of the 1RDM (i.e., site occupation) and 2RDM (i.e., double occupation).
-
-Note that this dmrg_script.sh is only called when you specify more than one impurity site ! Otherwise, you don't even need to install Block.1-5.
-
 ```
 $ cd ../work_dir/
 $ vi script.py
 ```
 
-Change ```code_directory = "set/your/path/to/code/repository"```.
+In ```script.py``` you will see two environment variable to set, ```PSOET_DIR``` and ```DMRG_code```. Set those variables in your PATH before running the script:
+```
+$ export PSOET_DIR=/path/to/P-SOET/
+$ export DMRG_code=/path/to/block-1.5.3/
+```
+In HPC Strasbourg:
+```
+$ export DMRG_code=/usr/local/quant/block-1.5.3/
+```
 
 # Use
 
